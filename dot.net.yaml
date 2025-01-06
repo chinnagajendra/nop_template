@@ -1,0 +1,53 @@
+---
+  pool: default
+  trigger: none
+  stages:
+    - stage: build
+      jobs:
+       - job: jobbuild
+         steps:
+          - task: SonarcloudPrepare@3
+            inputs:
+              Sonarcloud: quality_thought
+              scannerMode: other
+              projectKey: learning321_nop-commercelatest
+              organization: learning321
+          - task: DotNetCoreCLI@2
+            displayName: build the code 
+            inputs:
+              command: 'build'
+              projects: 'src/Presentation/Nop.Web/Nop.Web.csproj'
+              publishTestResults: true
+          - task: DotNetCoreCLI@2
+            displayName: Run uni Tests
+            inputs:
+              command: 'test'
+              projects: 'src/Tests/Nop.Tests/Nop.Tests.csproj'
+              arguments: '--configuration Release --no-build --logger trx;LogFileName=TestResults.trx' 
+          - task: DotNetCoreCLI@2
+            displayName: publish the code
+            inputs:
+              command: 'publish'
+              projects: 'src/Presentation/Nop.Web/Nop.Web.csproj'
+              publishWebProjects: true
+              arguments: '-o $(Build.ArtifactStagingDirectory)/Output'
+              zipAfterPublish: true
+              modifyOutputPath: true
+          - task: CopyFiles@1
+            inputs:
+              Contents: '**/nopcommerce*.jar'
+              TargetFolder: $(Build.ArtifactStagingDirectory)
+          - task: PublishBuildArtifacts@1
+            inputs:
+              pathToPublish: $(Build.ArtifactStagingDirectory)
+              artifactName: $(Build.Repository.Name)
+          - task: SonarCloudPublish@3
+            inputs:
+              pollingTimeoutSec: '300'
+  
+  
+  
+  
+          
+       
+  
